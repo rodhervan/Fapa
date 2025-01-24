@@ -1,4 +1,4 @@
-# Parámetros globales del sistema
+# Ajuste de parámetros para permitir ganancias positivas
 NUM_AGENTS = 5  # Número de prosumidores
 NUM_STATES = 10  # Estados posibles en el entorno
 NUM_ACTIONS = 5  # Acciones posibles por agente
@@ -9,19 +9,19 @@ EPSILON = 0.2  # Probabilidad de exploración
 # Inicialización de tablas Q para cada prosumidor
 Q_tables = [np.zeros((NUM_STATES, NUM_ACTIONS)) for _ in range(NUM_AGENTS)]
 
-# Parámetros del mercado local de energía
+# Parámetros del mercado local de energía con ajustes para ganancias positivas
 define_prices = {
-    "import": 0.1,  # Precio por importar energía de la red
-    "export": 0.05,  # Precio por exportar energía a la red
-    "battery_cost": 0.05,  # Costo asociado al uso de baterías por kWh
-    "carbon_cost": 0.01  # Costo por kg de emisiones de carbono evitadas
+    "import": 0.2,  # Incremento del precio de importación
+    "export": 0.15,  # Incremento del precio de exportación
+    "battery_cost": 0.03,  # Reducción del costo de baterías por kWh
+    "carbon_cost": 0.05  # Incremento del incentivo por kg de emisiones evitadas
 }
 
 # Modelo de prosumidor con batería y producción PV
 def environment_step(agent, state, action):
     """Simula la interacción de un prosumidor con el mercado local."""
-    pv_production = random.uniform(0, 5)  # Producción solar (kWh)
-    load_demand = random.uniform(2, 6)  # Demanda doméstica (kWh)
+    pv_production = random.uniform(2, 5)  # Producción solar (kWh), ajustada para ser mayor
+    load_demand = random.uniform(2, 4)  # Demanda doméstica (kWh), ajustada para ser menor
     battery_level = state  # Nivel de batería (estado actual)
     next_state = (state + action - int(load_demand - pv_production)) % NUM_STATES
 
@@ -36,6 +36,9 @@ def environment_step(agent, state, action):
     # Incentivo por reducción de emisiones
     carbon_savings = max(0, pv_production - load_demand)
     reward += define_prices["carbon_cost"] * carbon_savings
+
+    # if reward < 0:
+    #     reward *= 0.5 
 
     return next_state, reward
 
@@ -133,4 +136,3 @@ def evaluate_policies():
 centralized_training()  # Entrenamiento inicial basado en optimización
 decentralized_training(num_episodes=1000)  # Entrenamiento descentralizado
 evaluate_policies()  # Evaluación final
-
