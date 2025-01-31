@@ -152,7 +152,7 @@ def remove_incomplete_days(days: list, to_throw: list, n: int) -> list:
     return days
 
 
-def _append_current_day(days, current_day, id_, sequence, prm, step_keys, step):
+def append_current_day(days, current_day, id, sequence, prm, step_keys, step):
     current_day["id"] = id_
     for day_key in ["cum_day", "month"]:
         current_day[day_key] = sequence[day_key][step]
@@ -181,12 +181,12 @@ def get_days_clnr(
         # go through all the data for the current id
         for step in range(len(sequence["cum_day"])):
             if step > 0 and sequence["cum_day"][step] != sequence["cum_day"][step - 1]:
-                current_day, days = _append_current_day(days, current_day, id_, sequence, prm, step_keys, step)
+                current_day, days = append_current_day(days, current_day, id, sequence, prm, step_keys, step)
             for step_key in step_keys:
                 current_day[step_key].append(sequence[step_key][step])
 
         # store final day
-        current_day, days = _append_current_day(days, current_day, id_, sequence, prm, step_keys, step)
+        current_day, days = append_current_day(days, current_day, id, sequence, prm, step_keys, step)
 
     if len(sequences) == 0:
         print("len(sequences) == 0")
@@ -278,7 +278,8 @@ def add_no_trips_day(
             else cum_day,
             "weekday": (
                 prm["date0"]
-                + timedelta(days=current["cum_day"] + i_no_trip + 1)
+                + timedelta(days=int(current["cum_day"] + i_no_trip + 1))
+
             ).weekday()
             if weekday is None
             else weekday,
@@ -672,6 +673,12 @@ def filter_validity(
     """Filter rows in data, only keep valid data."""
     start_id, end_id = start_end_id
     data_source = prm["data_type_source"][data_type]
+
+     # Asegúrate de que la columna 'keep' exista
+    if "keep" not in data.columns:
+        print("Inicializando columna 'keep' con valores predeterminados.")
+        data["keep"] = True  # Por defecto, marcamos todas las filas como válidas
+
     if not (data_type == 'gen' and prm['gen_CLNR']):
         data["start_avail"] = data["id"].apply(
             lambda id_: start_id[data_source][id_]
@@ -756,7 +763,7 @@ def import_segment(
     if any(
             all(
                 (
-                    potential_path / f"{label}_{data_id_}_{chunk_rows[0]}_{chunk_rows[1]}.pickle"
+                    potential_path / f"{label}{data_id}{chunk_rows[0]}{chunk_rows[1]}.pickle"
                 ).is_file()
                 for label in prm["outs_labels"]
             )
